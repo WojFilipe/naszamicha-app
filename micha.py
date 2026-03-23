@@ -62,7 +62,7 @@ def init_db():
 POSILKI = ["Śniadanie", "II Śniadanie", "Obiad", "Przekąska", "Kolacja"]
 
 
-async def main(page: ft.Page):
+def main(page: ft.Page):
     page.title = "Nasza Micha"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 15
@@ -103,14 +103,14 @@ async def main(page: ft.Page):
     p_waga    = ft.TextField(label="Waga (kg)", expand=True)
     waga_list = ft.ListView(expand=True, spacing=5)
 
-    async def load_prods():
+    def load_prods():
         with db() as conn:
             cur = conn.cursor()
             cur.execute("SELECT nazwa FROM produkty ORDER BY nazwa ASC")
             prod_dd.options = [ft.dropdown.Option(r[0]) for r in cur.fetchall()]
-        await page.update_async()
+        page.update()
 
-    async def refresh_data():
+    def refresh_data():
         if not st["u"]:
             return
         d_str = st["d"].strftime("%Y-%m-%d")
@@ -174,25 +174,25 @@ async def main(page: ft.Page):
                     )
                 )
 
-        await page.update_async()
+        page.update()
 
-    async def snack(msg: str):
+    def snack(msg: str):
         page.snack_bar = ft.SnackBar(ft.Text(msg), open=True)
-        await page.update_async()
+        page.update()
 
-    async def delete_item(e):
+    def delete_item(e):
         with db() as conn:
             conn.cursor().execute("DELETE FROM dziennik WHERE id=%s", (e.control.data,))
-        await refresh_data()
+        refresh_data()
 
-    async def add_meal(e):
+    def add_meal(e):
         if not prod_dd.value or not amt_in.value:
-            await snack("Wybierz produkt i podaj ilosc!")
+            snack("Wybierz produkt i podaj ilosc!")
             return
         try:
             v = float(amt_in.value.replace(",", "."))
         except ValueError:
-            await snack("Nieprawidlowa ilosc!")
+            snack("Nieprawidlowa ilosc!")
             return
         with db() as conn:
             cur = conn.cursor()
@@ -213,11 +213,11 @@ async def main(page: ft.Page):
                  p[0]*m, p[1]*m, p[2]*m, p[3]*m),
             )
         amt_in.value = ""
-        await refresh_data()
+        refresh_data()
 
-    async def save_prod(e):
+    def save_prod(e):
         if not n_nazwa.value.strip():
-            await snack("Podaj nazwe produktu!")
+            snack("Podaj nazwe produktu!")
             return
         try:
             vals = (
@@ -229,7 +229,7 @@ async def main(page: ft.Page):
                 n_typ.value,
             )
         except ValueError:
-            await snack("Nieprawidlowe wartosci liczbowe!")
+            snack("Nieprawidlowe wartosci liczbowe!")
             return
         with db() as conn:
             conn.cursor().execute(
@@ -241,16 +241,16 @@ async def main(page: ft.Page):
             )
         for f in [n_nazwa, n_k, n_b, n_t, n_w]:
             f.value = ""
-        await load_prods()
-        await snack("Produkt zapisany!")
+        load_prods()
+        snack("Produkt zapisany!")
 
-    async def save_cel(e):
+    def save_cel(e):
         if not p_cel.value:
             return
         try:
             cel = float(p_cel.value.replace(",", "."))
         except ValueError:
-            await snack("Nieprawidlowa wartosc!")
+            snack("Nieprawidlowa wartosc!")
             return
         with db() as conn:
             conn.cursor().execute(
@@ -258,16 +258,16 @@ async def main(page: ft.Page):
                 (cel, st["u"]),
             )
         p_cel.value = ""
-        await snack(f"Cel: {int(cel)} kcal")
-        await refresh_data()
+        snack(f"Cel: {int(cel)} kcal")
+        refresh_data()
 
-    async def save_waga(e):
+    def save_waga(e):
         if not p_waga.value:
             return
         try:
             waga = float(p_waga.value.replace(",", "."))
         except ValueError:
-            await snack("Nieprawidlowa waga!")
+            snack("Nieprawidlowa waga!")
             return
         with db() as conn:
             conn.cursor().execute(
@@ -276,21 +276,21 @@ async def main(page: ft.Page):
                 (st["u"], st["d"].strftime("%Y-%m-%d"), waga),
             )
         p_waga.value = ""
-        await refresh_data()
+        refresh_data()
 
-    async def change_d(delta):
+    def change_d(delta):
         st["d"] += datetime.timedelta(days=delta)
-        await refresh_data()
+        refresh_data()
 
-    async def login(user: str):
+    def login(user: str):
         st["u"] = user
         v_login.visible = False
         v_main.visible  = True
         page.navigation_bar.visible = True
-        await load_prods()
-        await refresh_data()
+        load_prods()
+        refresh_data()
 
-    async def logout(_):
+    def logout(_):
         st["u"] = None
         st["d"] = datetime.date.today()
         v_main.visible  = False
@@ -300,7 +300,7 @@ async def main(page: ft.Page):
         tab_baza.visible     = False
         tab_profil.visible   = False
         page.navigation_bar.selected_index = 0
-        await page.update_async()
+        page.update()
 
     v_login = ft.Column(
         [
@@ -385,11 +385,11 @@ async def main(page: ft.Page):
 
     tabs = [tab_dziennik, tab_baza, tab_profil]
 
-    async def nav_change(e):
+    def nav_change(e):
         idx = e.control.selected_index
         for i, tab in enumerate(tabs):
             tab.visible = (i == idx)
-        await page.update_async()
+        page.update()
 
     page.navigation_bar = ft.NavigationBar(
         destinations=[
@@ -407,7 +407,7 @@ async def main(page: ft.Page):
         visible=False,
     )
 
-    await page.add_async(v_login, v_main)
+    page.add(v_login, v_main)
 
 
 ft.run(main)
