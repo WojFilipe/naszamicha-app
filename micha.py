@@ -62,7 +62,7 @@ def init_db():
 POSILKI = ["Śniadanie", "II Śniadanie", "Obiad", "Przekąska", "Kolacja"]
 
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     page.title = "Nasza Micha"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 15
@@ -71,9 +71,6 @@ def main(page: ft.Page):
 
     st = {"u": None, "d": datetime.date.today()}
 
-    # ------------------------------------------------------------------
-    # WIDŻETY DZIENNIK
-    # ------------------------------------------------------------------
     date_txt  = ft.Text("", size=16, weight="bold")
     kcal_txt  = ft.Text("0 / 0 kcal", size=26, weight="bold")
     pb        = ft.ProgressBar(value=0, height=12, color="green")
@@ -84,7 +81,7 @@ def main(page: ft.Page):
     log_list  = ft.ListView(expand=True, spacing=5)
 
     meal_dd = ft.Dropdown(
-        label="Posiłek",
+        label="Posilek",
         options=[ft.dropdown.Option(m) for m in POSILKI],
         value="Obiad",
         expand=True,
@@ -92,43 +89,28 @@ def main(page: ft.Page):
     prod_dd = ft.Dropdown(label="Produkt", expand=True)
     amt_in  = ft.TextField(label="G / Szt", width=90, keyboard_type="number")
 
-    # ------------------------------------------------------------------
-    # WIDŻETY BAZA
-    # ------------------------------------------------------------------
     n_nazwa = ft.TextField(label="Nazwa produktu", expand=True)
     n_typ   = ft.Dropdown(
         options=[ft.dropdown.Option("100g"), ft.dropdown.Option("szt")],
         value="100g", width=110,
     )
     n_k = ft.TextField(label="Kcal", expand=1)
-    n_b = ft.TextField(label="Białko", expand=1)
-    n_t = ft.TextField(label="Tłuszcz", expand=1)
-    n_w = ft.TextField(label="Węgle", expand=1)
+    n_b = ft.TextField(label="Bialko", expand=1)
+    n_t = ft.TextField(label="Tluszcz", expand=1)
+    n_w = ft.TextField(label="Wegle", expand=1)
 
-    # ------------------------------------------------------------------
-    # WIDŻETY PROFIL
-    # ------------------------------------------------------------------
     p_cel     = ft.TextField(label="Nowy cel kcal", expand=True)
     p_waga    = ft.TextField(label="Waga (kg)", expand=True)
     waga_list = ft.ListView(expand=True, spacing=5)
 
-    # ------------------------------------------------------------------
-    # LOGIKA
-    # ------------------------------------------------------------------
-    def load_prods():
+    async def load_prods():
         with db() as conn:
             cur = conn.cursor()
             cur.execute("SELECT nazwa FROM produkty ORDER BY nazwa ASC")
             prod_dd.options = [ft.dropdown.Option(r[0]) for r in cur.fetchall()]
-        safe_update()
+        await page.update_async()
 
-    def safe_update():
-        try:
-            page.update()
-        except Exception:
-            pass
-
-    def refresh_data():
+    async def refresh_data():
         if not st["u"]:
             return
         d_str = st["d"].strftime("%Y-%m-%d")
@@ -169,7 +151,7 @@ def main(page: ft.Page):
                 log_list.controls.append(
                     ft.ListTile(
                         title=ft.Text(f"{r[1]}  ({r[4]})"),
-                        subtitle=ft.Text(f"{int(r[2])} j.  –  {int(r[3])} kcal"),
+                        subtitle=ft.Text(f"{int(r[2])} j.  -  {int(r[3])} kcal"),
                         trailing=ft.IconButton(
                             ft.Icons.DELETE,
                             data=r[0],
@@ -192,32 +174,25 @@ def main(page: ft.Page):
                     )
                 )
 
-        try:
-            kcal_txt.update()
-            pb.update()
-            b_txt.update()
-            t_txt.update()
-            w_txt.update()
-            date_txt.update()
-            log_list.update()
-            waga_list.update()
-            macro_row.update()
-        except Exception:
-            pass
+        await page.update_async()
 
-    def delete_item(e):
+    async def snack(msg: str):
+        page.snack_bar = ft.SnackBar(ft.Text(msg), open=True)
+        await page.update_async()
+
+    async def delete_item(e):
         with db() as conn:
             conn.cursor().execute("DELETE FROM dziennik WHERE id=%s", (e.control.data,))
-        refresh_data()
+        await refresh_data()
 
-    def add_meal(e):
+    async def add_meal(e):
         if not prod_dd.value or not amt_in.value:
-            page.snack_bar = ft.SnackBar(ft.Text("Wybierz produkt i podaj ilość!"), open=True); safe_update()
+            await snack("Wybierz produkt i podaj ilosc!")
             return
         try:
             v = float(amt_in.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa ilość!"), open=True); safe_update()
+            await snack("Nieprawidlowa ilosc!")
             return
         with db() as conn:
             cur = conn.cursor()
@@ -238,11 +213,11 @@ def main(page: ft.Page):
                  p[0]*m, p[1]*m, p[2]*m, p[3]*m),
             )
         amt_in.value = ""
-        refresh_data()
+        await refresh_data()
 
-    def save_prod(e):
+    async def save_prod(e):
         if not n_nazwa.value.strip():
-            page.snack_bar = ft.SnackBar(ft.Text("Podaj nazwę produktu!"), open=True); safe_update()
+            await snack("Podaj nazwe produktu!")
             return
         try:
             vals = (
@@ -254,7 +229,7 @@ def main(page: ft.Page):
                 n_typ.value,
             )
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowe wartości liczbowe!"), open=True); safe_update()
+            await snack("Nieprawidlowe wartosci liczbowe!")
             return
         with db() as conn:
             conn.cursor().execute(
@@ -266,16 +241,16 @@ def main(page: ft.Page):
             )
         for f in [n_nazwa, n_k, n_b, n_t, n_w]:
             f.value = ""
-        load_prods()
-        page.snack_bar = ft.SnackBar(ft.Text("✅ Produkt zapisany!"), open=True); safe_update()
+        await load_prods()
+        await snack("Produkt zapisany!")
 
-    def save_cel(e):
+    async def save_cel(e):
         if not p_cel.value:
             return
         try:
             cel = float(p_cel.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa wartość!"), open=True); safe_update()
+            await snack("Nieprawidlowa wartosc!")
             return
         with db() as conn:
             conn.cursor().execute(
@@ -283,16 +258,16 @@ def main(page: ft.Page):
                 (cel, st["u"]),
             )
         p_cel.value = ""
-        page.snack_bar = ft.SnackBar(ft.Text(f"✅ Cel: {int(cel)} kcal"), open=True); safe_update()
-        refresh_data()
+        await snack(f"Cel: {int(cel)} kcal")
+        await refresh_data()
 
-    def save_waga(e):
+    async def save_waga(e):
         if not p_waga.value:
             return
         try:
             waga = float(p_waga.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa waga!"), open=True); safe_update()
+            await snack("Nieprawidlowa waga!")
             return
         with db() as conn:
             conn.cursor().execute(
@@ -301,51 +276,46 @@ def main(page: ft.Page):
                 (st["u"], st["d"].strftime("%Y-%m-%d"), waga),
             )
         p_waga.value = ""
-        refresh_data()
+        await refresh_data()
 
-    def change_d(delta):
+    async def change_d(delta):
         st["d"] += datetime.timedelta(days=delta)
-        refresh_data()
+        await refresh_data()
 
-    # ------------------------------------------------------------------
-    # LOGOWANIE
-    # ------------------------------------------------------------------
-    def login(user: str):
+    async def login(user: str):
         st["u"] = user
         v_login.visible = False
         v_main.visible  = True
         page.navigation_bar.visible = True
-        load_prods()
-        refresh_data()
+        await load_prods()
+        await refresh_data()
 
-    def logout(_):
+    async def logout(_):
         st["u"] = None
         st["d"] = datetime.date.today()
         v_main.visible  = False
         v_login.visible = True
         page.navigation_bar.visible = False
-        # reset nawigacji do dziennika
         tab_dziennik.visible = True
         tab_baza.visible     = False
         tab_profil.visible   = False
         page.navigation_bar.selected_index = 0
-        safe_update()
+        await page.update_async()
 
-    # Ekran wyboru użytkownika – dwa duże przyciski
     v_login = ft.Column(
         [
-            ft.Text("🍽️ Nasza Micha", size=32, weight="bold"),
-            ft.Text("Kto gotuje dziś?", size=18),
+            ft.Text("Nasza Micha", size=32, weight="bold"),
+            ft.Text("Kto gotuje dzis?", size=18),
             ft.Container(height=20),
             ft.FilledButton(
-                "👨 Filip",
+                "Filip",
                 on_click=lambda _: login("Filip"),
                 height=70,
                 width=260,
                 style=ft.ButtonStyle(text_style=ft.TextStyle(size=22)),
             ),
             ft.FilledButton(
-                "👩 Nikola",
+                "Nikola",
                 on_click=lambda _: login("Nikola"),
                 height=70,
                 width=260,
@@ -358,9 +328,6 @@ def main(page: ft.Page):
         expand=True,
     )
 
-    # ------------------------------------------------------------------
-    # ZAKŁADKI
-    # ------------------------------------------------------------------
     tab_dziennik = ft.Column(
         [
             ft.Row(
@@ -378,10 +345,8 @@ def main(page: ft.Page):
             ft.Row([meal_dd, amt_in]),
             prod_dd,
             ft.FilledButton(
-                "➕ ZJEDZONE!",
+                "ZJEDZONE!",
                 on_click=add_meal,
-                bgcolor="blue",
-                color="white",
                 height=45,
             ),
             ft.Divider(),
@@ -392,14 +357,12 @@ def main(page: ft.Page):
 
     tab_baza = ft.Column(
         [
-            ft.Text("➕ Nowy produkt", size=20, weight="bold"),
+            ft.Text("Nowy produkt", size=20, weight="bold"),
             ft.Row([n_nazwa, n_typ]),
             ft.Row([n_k, n_b, n_t, n_w]),
             ft.FilledButton(
                 "DODAJ DO BAZY",
                 on_click=save_prod,
-                bgcolor="green",
-                color="white",
             ),
         ],
         visible=False,
@@ -407,14 +370,14 @@ def main(page: ft.Page):
 
     tab_profil = ft.Column(
         [
-            ft.Text("⚙️ Profil", size=20, weight="bold"),
+            ft.Text("Profil", size=20, weight="bold"),
             ft.Row([p_cel, ft.IconButton(ft.Icons.SAVE, on_click=save_cel)]),
             ft.Divider(),
-            ft.Text("⚖️ Waga", size=20, weight="bold"),
+            ft.Text("Waga", size=20, weight="bold"),
             ft.Row([p_waga, ft.IconButton(ft.Icons.ADD, on_click=save_waga)]),
             waga_list,
             ft.Divider(),
-            ft.TextButton("🚪 Wyloguj", on_click=logout),
+            ft.TextButton("Wyloguj", on_click=logout),
         ],
         visible=False,
         expand=True,
@@ -422,11 +385,11 @@ def main(page: ft.Page):
 
     tabs = [tab_dziennik, tab_baza, tab_profil]
 
-    def nav_change(e):
+    async def nav_change(e):
         idx = e.control.selected_index
         for i, tab in enumerate(tabs):
             tab.visible = (i == idx)
-        safe_update()
+        await page.update_async()
 
     page.navigation_bar = ft.NavigationBar(
         destinations=[
@@ -444,7 +407,7 @@ def main(page: ft.Page):
         visible=False,
     )
 
-    page.add(v_login, v_main)
+    await page.add_async(v_login, v_main)
 
 
 ft.run(main)
