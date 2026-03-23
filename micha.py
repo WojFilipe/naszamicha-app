@@ -82,8 +82,10 @@ def main(page: ft.Page):
     init_db()
 
     # Stan sesji – ładowany z client_storage dla trwałego logowania
+    # Flet 1.0: client_storage → page.session
+    saved_user = page.session.get("logged_user")
     st = {
-        "u": page.client_storage.get("logged_user"),
+        "u": saved_user,
         "d": datetime.date.today(),
     }
 
@@ -326,7 +328,7 @@ def main(page: ft.Page):
 
     def do_login(user: str):
         st["u"] = user
-        page.client_storage.set("logged_user", user)
+        page.session.set("logged_user", user)
         v_login.visible = False
         v_main.visible  = True
         page.navigation_bar.visible = True
@@ -344,7 +346,7 @@ def main(page: ft.Page):
 
     def logout(_):
         st["u"] = None
-        page.client_storage.remove("logged_user")
+        page.session.remove("logged_user")
         v_main.visible  = False
         v_login.visible = True
         page.navigation_bar.visible = False
