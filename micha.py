@@ -120,7 +120,13 @@ def main(page: ft.Page):
             cur = conn.cursor()
             cur.execute("SELECT nazwa FROM produkty ORDER BY nazwa ASC")
             prod_dd.options = [ft.dropdown.Option(r[0]) for r in cur.fetchall()]
-        page.update()
+        safe_update()
+
+    def safe_update():
+        try:
+            page.update()
+        except Exception:
+            pass
 
     def refresh_data():
         if not st["u"]:
@@ -186,7 +192,18 @@ def main(page: ft.Page):
                     )
                 )
 
-        page.update()
+        try:
+            kcal_txt.update()
+            pb.update()
+            b_txt.update()
+            t_txt.update()
+            w_txt.update()
+            date_txt.update()
+            log_list.update()
+            waga_list.update()
+            macro_row.update()
+        except Exception:
+            pass
 
     def delete_item(e):
         with db() as conn:
@@ -195,12 +212,12 @@ def main(page: ft.Page):
 
     def add_meal(e):
         if not prod_dd.value or not amt_in.value:
-            page.snack_bar = ft.SnackBar(ft.Text("Wybierz produkt i podaj ilość!"), open=True); page.update()
+            page.snack_bar = ft.SnackBar(ft.Text("Wybierz produkt i podaj ilość!"), open=True); safe_update()
             return
         try:
             v = float(amt_in.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa ilość!"), open=True); page.update()
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa ilość!"), open=True); safe_update()
             return
         with db() as conn:
             cur = conn.cursor()
@@ -225,7 +242,7 @@ def main(page: ft.Page):
 
     def save_prod(e):
         if not n_nazwa.value.strip():
-            page.snack_bar = ft.SnackBar(ft.Text("Podaj nazwę produktu!"), open=True); page.update()
+            page.snack_bar = ft.SnackBar(ft.Text("Podaj nazwę produktu!"), open=True); safe_update()
             return
         try:
             vals = (
@@ -237,7 +254,7 @@ def main(page: ft.Page):
                 n_typ.value,
             )
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowe wartości liczbowe!"), open=True); page.update()
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowe wartości liczbowe!"), open=True); safe_update()
             return
         with db() as conn:
             conn.cursor().execute(
@@ -250,7 +267,7 @@ def main(page: ft.Page):
         for f in [n_nazwa, n_k, n_b, n_t, n_w]:
             f.value = ""
         load_prods()
-        page.snack_bar = ft.SnackBar(ft.Text("✅ Produkt zapisany!"), open=True); page.update()
+        page.snack_bar = ft.SnackBar(ft.Text("✅ Produkt zapisany!"), open=True); safe_update()
 
     def save_cel(e):
         if not p_cel.value:
@@ -258,7 +275,7 @@ def main(page: ft.Page):
         try:
             cel = float(p_cel.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa wartość!"), open=True); page.update()
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa wartość!"), open=True); safe_update()
             return
         with db() as conn:
             conn.cursor().execute(
@@ -266,7 +283,7 @@ def main(page: ft.Page):
                 (cel, st["u"]),
             )
         p_cel.value = ""
-        page.snack_bar = ft.SnackBar(ft.Text(f"✅ Cel: {int(cel)} kcal"), open=True); page.update()
+        page.snack_bar = ft.SnackBar(ft.Text(f"✅ Cel: {int(cel)} kcal"), open=True); safe_update()
         refresh_data()
 
     def save_waga(e):
@@ -275,7 +292,7 @@ def main(page: ft.Page):
         try:
             waga = float(p_waga.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa waga!"), open=True); page.update()
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa waga!"), open=True); safe_update()
             return
         with db() as conn:
             conn.cursor().execute(
@@ -312,7 +329,7 @@ def main(page: ft.Page):
         tab_baza.visible     = False
         tab_profil.visible   = False
         page.navigation_bar.selected_index = 0
-        page.update()
+        safe_update()
 
     # Ekran wyboru użytkownika – dwa duże przyciski
     v_login = ft.Column(
@@ -320,14 +337,14 @@ def main(page: ft.Page):
             ft.Text("🍽️ Nasza Micha", size=32, weight="bold"),
             ft.Text("Kto gotuje dziś?", size=18),
             ft.Container(height=20),
-            ft.ElevatedButton(
+            ft.FilledButton(
                 "👨 Filip",
                 on_click=lambda _: login("Filip"),
                 height=70,
                 width=260,
                 style=ft.ButtonStyle(text_style=ft.TextStyle(size=22)),
             ),
-            ft.ElevatedButton(
+            ft.FilledButton(
                 "👩 Nikola",
                 on_click=lambda _: login("Nikola"),
                 height=70,
@@ -360,7 +377,7 @@ def main(page: ft.Page):
             ),
             ft.Row([meal_dd, amt_in]),
             prod_dd,
-            ft.ElevatedButton(
+            ft.FilledButton(
                 "➕ ZJEDZONE!",
                 on_click=add_meal,
                 bgcolor="blue",
@@ -378,7 +395,7 @@ def main(page: ft.Page):
             ft.Text("➕ Nowy produkt", size=20, weight="bold"),
             ft.Row([n_nazwa, n_typ]),
             ft.Row([n_k, n_b, n_t, n_w]),
-            ft.ElevatedButton(
+            ft.FilledButton(
                 "DODAJ DO BAZY",
                 on_click=save_prod,
                 bgcolor="green",
@@ -409,7 +426,7 @@ def main(page: ft.Page):
         idx = e.control.selected_index
         for i, tab in enumerate(tabs):
             tab.visible = (i == idx)
-        page.update()
+        safe_update()
 
     page.navigation_bar = ft.NavigationBar(
         destinations=[
