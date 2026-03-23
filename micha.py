@@ -3,7 +3,7 @@ import psycopg2
 import os
 import datetime
 
-# TUTAJ WKLEJ Z POWROTEM SWÓJ LINK Z NEON.TECH
+# TUTAJ WKLEJ Z POWROTEM SWÓJ LINK Z NEON.TECH (zostaw cudzysłowy)
 DB_URL = os.environ.get("DATABASE_URL", "TUTAJ_WKLEJ_SWOJ_LINK")
 
 def get_db():
@@ -30,7 +30,7 @@ def main(page: ft.Page):
 
     app_date = datetime.date.today()
 
-    # WYBÓR UŻYTKOWNIKA (Rozciągnięty na telefon)
+    # WYBÓR UŻYTKOWNIKA
     user_select = ft.Dropdown(
         label="Obecnie korzysta:", 
         options=[ft.dropdown.Option("Filip"), ft.dropdown.Option("Dziewczyna")], 
@@ -38,7 +38,7 @@ def main(page: ft.Page):
         expand=True
     )
 
-    # WIZUALNE POTWIERDZENIE (Żebyś nie miał wątpliwości na czyim jesteś koncie)
+    # WIZUALNE POTWIERDZENIE 
     naglowek_imie = ft.Text("Dziennik: Filip", size=20, weight="bold", color="blue400")
     
     status_kcal = ft.Text("0 / 0 kcal", size=26, weight="bold")
@@ -60,12 +60,11 @@ def main(page: ft.Page):
         refresh_all()
 
     def refresh_all(e=None):
-        # Twarde wymuszenie przypisania użytkownika
         if e and hasattr(e.control, "value"):
             user_select.value = e.control.value 
             
         user = user_select.value
-        naglowek_imie.value = f"Dziennik: {user}" # Zmienia tekst na ekranie!
+        naglowek_imie.value = f"Dziennik: {user}" 
         
         data_str = app_date.strftime("%Y-%m-%d")
         date_display.value = data_str
@@ -165,7 +164,6 @@ def main(page: ft.Page):
         except ValueError: return
         data_str = app_date.strftime("%Y-%m-%d")
         
-        # Pancerne zabezpieczenie - pobieramy usera w chwili kliknięcia!
         aktywny_user = user_select.value 
 
         conn = get_db()
@@ -178,7 +176,6 @@ def main(page: ft.Page):
                     (aktywny_user, data_str, meal_select.value, dd_produkt.value, ilosc_wpisana, p[4], p[0]*mnoznik, p[1]*mnoznik, p[2]*mnoznik, p[3]*mnoznik))
         conn.commit(); conn.close()
         input_ilosc.value = ""; refresh_all()
-        # Wyskakujące info na dole ekranu
         page.show_snack_bar(ft.SnackBar(ft.Text(f"Dodano posiłek do konta: {aktywny_user}")))
 
     n_nazwa = ft.TextField(label="Nazwa produktu", expand=True)
@@ -198,7 +195,7 @@ def main(page: ft.Page):
         page.show_snack_bar(ft.SnackBar(ft.Text("Produkt zapisany w bazie!")))
         page.update()
 
-    # WIDOKI GŁÓWNE (Zoptymalizowane pod telefony)
+    # WIDOKI GŁÓWNE
     view_dziennik = ft.Column([
         naglowek_imie,
         kalendarz_row, 
@@ -234,12 +231,12 @@ def main(page: ft.Page):
         view_profil.visible = (idx == 2)
         page.update()
 
-    # DOLNE MENU NAWIGACYJNE
+    # POPRAWIONE DOLNE MENU NAWIGACYJNE
     bottom_nav = ft.NavigationBar(
         destinations=[
-            ft.NavigationDestination(icon=ft.Icons.DINNER_DINING, label="Dziennik"),
-            ft.NavigationDestination(icon=ft.Icons.ADD_BOX, label="Baza"),
-            ft.NavigationDestination(icon=ft.Icons.PERSON, label="Profil"),
+            ft.NavigationBarDestination(icon=ft.Icons.DINNER_DINING, label="Dziennik"),
+            ft.NavigationBarDestination(icon=ft.Icons.ADD_BOX, label="Baza"),
+            ft.NavigationBarDestination(icon=ft.Icons.PERSON, label="Profil"),
         ],
         on_change=change_tab
     )
