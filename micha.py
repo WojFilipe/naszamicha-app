@@ -319,7 +319,7 @@ def main(page: ft.Page):
         [
             ft.Text("🍽️ Nasza Micha", size=32, weight="bold"),
             ft.Text("Kto gotuje dziś?", size=18),
-            ft.SizedBox(height=20),
+            ft.Container(height=20),
             ft.ElevatedButton(
                 "👨 Filip",
                 on_click=lambda _: login("Filip"),
@@ -430,9 +430,4 @@ def main(page: ft.Page):
     page.add(v_login, v_main)
 
 
-ft.run(
-    target=main,
-    view=ft.AppView.WEB_BROWSER,
-    port=int(os.environ.get("PORT", 8080)),
-    host="0.0.0.0",
-)
+ft.run(main)
