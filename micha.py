@@ -195,12 +195,12 @@ def main(page: ft.Page):
 
     def add_meal(e):
         if not prod_dd.value or not amt_in.value:
-            page.open(ft.SnackBar(ft.Text("Wybierz produkt i podaj ilość!")))
+            page.snack_bar = ft.SnackBar(ft.Text("Wybierz produkt i podaj ilość!"), open=True); page.update()
             return
         try:
             v = float(amt_in.value.replace(",", "."))
         except ValueError:
-            page.open(ft.SnackBar(ft.Text("Nieprawidłowa ilość!")))
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa ilość!"), open=True); page.update()
             return
         with db() as conn:
             cur = conn.cursor()
@@ -225,7 +225,7 @@ def main(page: ft.Page):
 
     def save_prod(e):
         if not n_nazwa.value.strip():
-            page.open(ft.SnackBar(ft.Text("Podaj nazwę produktu!")))
+            page.snack_bar = ft.SnackBar(ft.Text("Podaj nazwę produktu!"), open=True); page.update()
             return
         try:
             vals = (
@@ -237,7 +237,7 @@ def main(page: ft.Page):
                 n_typ.value,
             )
         except ValueError:
-            page.open(ft.SnackBar(ft.Text("Nieprawidłowe wartości liczbowe!")))
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowe wartości liczbowe!"), open=True); page.update()
             return
         with db() as conn:
             conn.cursor().execute(
@@ -250,7 +250,7 @@ def main(page: ft.Page):
         for f in [n_nazwa, n_k, n_b, n_t, n_w]:
             f.value = ""
         load_prods()
-        page.open(ft.SnackBar(ft.Text("✅ Produkt zapisany!")))
+        page.snack_bar = ft.SnackBar(ft.Text("✅ Produkt zapisany!"), open=True); page.update()
 
     def save_cel(e):
         if not p_cel.value:
@@ -258,7 +258,7 @@ def main(page: ft.Page):
         try:
             cel = float(p_cel.value.replace(",", "."))
         except ValueError:
-            page.open(ft.SnackBar(ft.Text("Nieprawidłowa wartość!")))
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa wartość!"), open=True); page.update()
             return
         with db() as conn:
             conn.cursor().execute(
@@ -266,7 +266,7 @@ def main(page: ft.Page):
                 (cel, st["u"]),
             )
         p_cel.value = ""
-        page.open(ft.SnackBar(ft.Text(f"✅ Cel: {int(cel)} kcal")))
+        page.snack_bar = ft.SnackBar(ft.Text(f"✅ Cel: {int(cel)} kcal"), open=True); page.update()
         refresh_data()
 
     def save_waga(e):
@@ -275,7 +275,7 @@ def main(page: ft.Page):
         try:
             waga = float(p_waga.value.replace(",", "."))
         except ValueError:
-            page.open(ft.SnackBar(ft.Text("Nieprawidłowa waga!")))
+            page.snack_bar = ft.SnackBar(ft.Text("Nieprawidłowa waga!"), open=True); page.update()
             return
         with db() as conn:
             conn.cursor().execute(
